@@ -1,0 +1,526 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>compilation-principle | 锦钊的博客</title><meta name="author" content="jinzhao"><meta name="copyright" content="jinzhao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="#编译原理 ##词法分析 词法分析（扫描）器的功能：输入源程序，输出单词符号（token）。即 构成源程序的字符串转换为单词符号的序列，删去空格字符和注解。 单词符号的形式：  按照最小的语义单元设计 通常表示为二元组：（单词种别，属性值）  为什么要弄成统一的表达形式?从程序设计的角度考虑问题，从软件工程的角度来考虑问题？？？ 怎么找出单词符号？词法分析关键是：找出符号的分割符 单词的分类？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="compilation-principle">
+<meta property="og:url" content="http://123.249.26.15/2023/09/03/compilation-principle/index.html">
+<meta property="og:site_name" content="锦钊的博客">
+<meta property="og:description" content="#编译原理 ##词法分析 词法分析（扫描）器的功能：输入源程序，输出单词符号（token）。即 构成源程序的字符串转换为单词符号的序列，删去空格字符和注解。 单词符号的形式：  按照最小的语义单元设计 通常表示为二元组：（单词种别，属性值）  为什么要弄成统一的表达形式?从程序设计的角度考虑问题，从软件工程的角度来考虑问题？？？ 怎么找出单词符号？词法分析关键是：找出符号的分割符 单词的分类？">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png">
+<meta property="article:published_time" content="2023-09-02T17:31:30.856Z">
+<meta property="article:modified_time" content="2023-05-11T13:05:31.347Z">
+<meta property="article:author" content="jinzhao">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://123.249.26.15/2023/09/03/compilation-principle/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'compilation-principle',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-05-11 21:05:31'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">6</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><hr/></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a href="/" title="锦钊的博客"><span class="site-name">锦钊的博客</span></a></span><div id="menus"><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">compilation-principle</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-09-02T17:31:30.856Z" title="发表于 2023-09-03 01:31:30">2023-09-03</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-05-11T13:05:31.347Z" title="更新于 2023-05-11 21:05:31">2023-05-11</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="compilation-principle"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p>#编译原理</p>
+<p>##词法分析</p>
+<p>词法分析（扫描）器的功能：<br>输入<strong>源程序</strong>，输出<strong>单词符号</strong>（token）。即 构成<strong>源程序的字符串</strong>转换为<strong>单词符号的序列</strong>，删去<strong>空格字符和注解</strong>。</p>
+<p>单词符号的形式：</p>
+<ul>
+<li>按照最小的语义单元设计</li>
+<li>通常表示为二元组：<br>（单词种别，属性值）</li>
+</ul>
+<p><strong>为什么要弄成统一的表达形式?</strong><br>从程序设计的角度考虑问题，从软件工程的角度来考虑问题？？？</p>
+<p>怎么找出单词符号？<br><strong>词法分析关键是：找出符号的分割符</strong></p>
+<p>单词的分类？</p>
+<ul>
+<li><strong>关键词</strong>：语言自身使用的一些单词。一般，关键字不允许作为标识符，因此又叫<strong>保留字</strong></li>
+<li><strong>标志符</strong>：语言中用于<strong>表示各种名字的合法串</strong>。如变量名，函数名。</li>
+<li><strong>常数</strong>：分为整数，实型，布尔型，字符型。</li>
+<li><strong>运算符</strong>：算术运算符，逻辑运算符，关系运算符</li>
+<li><strong>界限符</strong>：用于运算也起分隔对象的作用  <strong>； （） ， 赋值符号</strong></li>
+</ul>
+<p>找到有<strong>共性</strong>的符号，找到规律进行分类，能减少我们的工作量！</p>
+<p>单词符号的表示：二元式<br>（单词种别码，单词自身值）</p>
+<p>种别码确定的规则（本身没有固定的要求，根据自己的情况）：  </p>
+<ul>
+<li>关键字： 一种一码。</li>
+<li>标识符： <strong>一种码</strong></li>
+<li>常数： <strong>一类型一码</strong></li>
+<li>界限符： 一符一码<br>属性值—单词自身值</li>
+<li>无自身值：关键字，界限符，运算符（和上面的种类码确定有联系，不需要自身值就能识别）</li>
+<li>有自身值：常数和标识符。<strong>自己本身或符号表的入口地址</strong>。绝大多数时候存的是符号表的入口地址。</li>
+</ul>
+<p>while  单词，关键字（WHILE，_ )<br>_表示空的。当然WHILE可以写别的，自己规定</p>
+<p>（ 是单词，分割符（SLP，_ )</p>
+<p>pointer是标识符  （IDN，  符号表入口指针）  idn是标识符的种类码。</p>
+<p>！&#x3D; （RELOP,NE)</p>
+<p>‘\0’ 引号不是单词 （CONST，0）  ‘’没用，因为我们只需要只要引号里面的串就好，不需要把引号作为单词</p>
+<p>##语法分析</p>
+<p>一个语句的翻译：<br>词法分析—》统<strong>一表达不同分类的单词</strong>。单词是最小的语义单位。但是单纯的单词不构成句子没有正确的语义。</p>
+<p>然后语法分析。语法分析会生成一个语法分析树，这个内容是隐含的，是一种可视化的表达，让我们清楚看到语句的结构，这是语法分析树存在的必要性。但是最后不需要输出。</p>
+<p>语法分析技术：  </p>
+<ul>
+<li><p>自顶向下（文法产生语言）：<br>递归子程序法。预测分析法（常用）。<br>从根开始，逐步为某语句构造一棵语法树</p>
+<p>如果从文法开始符号，用产生式能够最后推导出句子，那么句子的语法结构是正确的。因为你用到的都是给定文法里面的产生式，产生式是句子的局部构造。</p>
+</li>
+<li><p>自底向上（自动机识别语言）：<br>算符优先分析法，LR分析法（重点，非常通用，现在计算机很多编程语言。）<br>相反，将一句子归约为开始符号是自底向上。在树上，是从叶子节点开始构造。<br>如果每次归约用的都是文法的产生式，说明每次归约得到的结构也是对的，最后能到开始符号，那么也是正确的。</p>
+<p>大前提：假设文法是压缩的。即删除了单位产生式和无用产生式。<br><img src="/2023/09/03/compilation-principle/2023-05-05-17-38-07.png"></p>
+</li>
+</ul>
+<hr>
+<p>  语法分析主要功能：<br>  <strong>检查由词法扫描器输出的单词序列是否符合该语言的文法–句子</strong>。说白了就是给定的句子语法结构是否正确，需要借助文法。（文法是四元组。开始符号，终结符号，非终结符号，产生式的集合）</p>
+<p>  所处的位置：<br>  前面是词法分析器，接受单词序列，检查语法结构。正确的话把结果给前端的其他部分，错误的话要进行出错处理（定位，后续编译）</p>
+<hr>
+<p>  自顶向下语法分析技术面临的问题：<br>   <strong>给定的开始符号出发，寻找所给定的输入符号的最左推导</strong>。</p>
+<p>  例子：<br>  <img src="/2023/09/03/compilation-principle/2023-05-05-17-46-00.png"><br>  第一个是x<br>  我们从S开始，所以要找S的一个产生式能够生成x。<br>  xAy是一个句型。看A产生式能不能产生我们<em>。A是选择的是</em>而不是*<em>。这是因为我们是一个一个地处理单词的，它只知道我们有一个</em>要处理，但是它不知道后面后面还有<em>号。<br>  所以我们得到了x</em>y，全是终结符号，这是一个句子，我们不能继续推导。但是和我们输入的串不一样。<br>  这时候我们不能下结论，因为我们其实是前面选错产生式了。<br>  这里涉及一个回溯的问题，重新选择A的产生式！！！</p>
+<p>  产生回溯的原因：<br>  文法中每个非终结符号A的产生式右部成为A的候选式。如果多个候选式左侧第一个符号相同，则语法分析程序无法根据当前输入符号选择产生式，只能进行试探。。</p>
+<p>  这是“文法不好”？怎么定义“不好”？其实主要是不能这么说，因为文法是对的。但是我要避免这类问题.<br>  词法干涉不到文法分析，所以这里和词法分析也没有关系。</p>
+<p>  在这里面俩个*是俩个单词，不是自增自乘，那个词法分析出来的是一个单词。</p>
+<p>  除了回溯的问题，还有左递归的问题。<br>  <img src="/2023/09/03/compilation-principle/2023-05-05-18-00-19.png"><br>  这里a是一个单词，虽然看到的是字母，但是这里表示的是单词。<br>  <img src="/2023/09/03/compilation-principle/2023-05-05-18-01-14.png"><br>  这里是左递归导致的一个无限循环。</p>
+<p>  <img src="/2023/09/03/compilation-principle/2023-05-05-19-52-18.png"><br>  这个文法就是存在左递归的</p>
+<p>  还有个问题是二义性的问题。<br>  <img src="/2023/09/03/compilation-principle/2023-05-05-19-54-56.png"></p>
+<p>  <img src="/2023/09/03/compilation-principle/2023-05-05-19-56-17.png"><br>  <strong>自顶向下是最左推导。为什么要最左推导？在实现语法分析器时候非常重要</strong></p>
+<p>  最右推导，规范推导。对应最左归约，也就是规范归约。</p>
+<p>  计算机语法分析时候，对于当前输入单词，我们需要能找到产生式或者找不到产生式俩种情况。而且要整个推导的过程应该是惟一的，不能存在回溯，因为回溯几步不确定，回溯到什么地方也不确定。</p>
+<p>  <img src="/2023/09/03/compilation-principle/2023-05-05-19-59-42.png"><br>  改成非二义性文法：要使得文法含有更多的信息，引入语法变量。</p>
+<p>  <img src="/2023/09/03/compilation-principle/2023-05-05-20-04-57.png"><br>  典型的二义性问题。探究，else和谁匹配的问题。<br>  <img src="/2023/09/03/compilation-principle/2023-05-05-20-08-01.png"><br>  M是带else的。else总是和离最近的if匹配。</p>
+<p>  消除左递归：<br>  方法就是把左递归换成右递归。<br>  左递归有俩种，一种是直接左递归，另外一种是间接左递归。</p>
+<p>  乔姆斯基文法分为4类。<br>  0，1，2，3型文法<br>  短语文法，上下有关文法，上下文无关文法，正则文法。</p>
+<p>  范式和文法是俩个不同的概念。范式表示文法。<br>  左线性文法和右线性文法是乔姆斯基范式里面的。</p>
+<p>  <img src="/2023/09/03/compilation-principle/2023-05-05-20-21-12.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-05-20-21-55.png"><br><img src="/2023/09/03/compilation-principle/2023-05-05-20-22-57.png"><br><img src="/2023/09/03/compilation-principle/2023-05-05-20-28-54.png"></p>
+<p>解决回溯问题—提取左因子。<br><img src="/2023/09/03/compilation-principle/2023-05-05-20-38-28.png"></p>
+<p>其中二义性的问题在自底向上的问题也可能遇到。</p>
+<p>CFG（上下文无关文法）的使用限制：<br>没有一种方法能够有效分析所有上下文无关文法。<br>存在无法处理的2型文法（CFG），有的本身就有二义性。</p>
+<p>每种方法能够处理一部分上下文无关文法，每种方法都有适用范围。</p>
+<p>LL和LR文法都是CFG子集。对于不同的文法有不同的分析方法。<br><img src="/2023/09/03/compilation-principle/2023-05-05-20-44-21.png"><br>LL文法约束更强，表达的范围更小。<br>LR文法约束弱，描述能力更强</p>
+<p>自顶向下的分析方法：<br>基本思想：</p>
+<ul>
+<li>寻找输入符号串的<strong>最左推导</strong>（注意这里符号串是句子，虽然用字母，但是你要知道字母是单词。）</li>
+<li>试图根据当前输入单词判断使用哪个<strong>产生式</strong>。<br>基本过程：<br>从根开始，按与最左推导相对应的顺序，构造输入符号串（token）的分析树，直到生成叶子节点都是终极符号的语法分析树 （这是从语法分析树角度来说）</li>
+</ul>
+<p><img src="/2023/09/03/compilation-principle/2023-05-05-20-56-53.png"></p>
+<p>每个句子的结束标志是一个$符号。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-05-21-15-58.png"><br>有时候没有我们选择ε。<br>有时候我们被迫选择唯一的选项，虽然第一个不是终结符号。。。。<br><strong>如何找到产生式？？？？！！！如何确定候选式</strong></p>
+<p>无回溯要求：  </p>
+<ol>
+<li>能找到产生式</li>
+<li>唯一</li>
+<li>要么满足1，2  要么没有找到<br>  （个人感觉在特定情况下唯一选择。S）<br>  <img src="/2023/09/03/compilation-principle/2023-05-05-21-24-44.png"></li>
+</ol>
+<hr>
+<p>  <img src="/2023/09/03/compilation-principle/2023-05-05-21-28-06.png"></p>
+<hr>
+<p>句柄是跟上下文相关的。句柄是针对某一个句型而言的。β针对这个句型可能是句柄，但是针对另外一个句型不一定是句柄。<br><img src="/2023/09/03/compilation-principle/2023-05-07-12-08-10.png"><br>α可以是终结符号也可以不是终结符号。<br><img src="/2023/09/03/compilation-principle/2023-05-07-12-09-23.png"><br>其中每一个句型都是规范句型。</p>
+<hr>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-12-11-02.png"><br>没有把T归约为E是因为此时E*id不是规范句型，所以此时T不是一个句柄，他虽然是产生式的右部。</p>
+<p>为什么归约T<em>F不是归约F，同样归约后T</em>T也不是一个规范句型，所以F不是句柄。</p>
+<p>怎么找到句柄？？？这个问题先放着。</p>
+<p>我们先看 移入-归约分析技术。<br>如何在计算机里面实现？<br>移入-归约分析技术这个方法（模型）能够帮助我们在计算机上实现语法分析器。</p>
+<p>语法分析器对应的自动机都是PDA（下推自动机）  </p>
+<p>使用一个栈来保存归约&#x2F;扫描移入的文法符号。<br>栈中符号（从底向上）和待扫描的符号组成了一个最句型。<br><img src="/2023/09/03/compilation-principle/2023-05-07-12-23-08.png"></p>
+<p>分析过程：不断地移入符号到栈顶，并在<strong>识别到句型的时候</strong>进行归约，具体是弹出句柄，压入被归约到的非终结符号。<br>句柄被识别时候总是出现在栈的顶部。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-12-25-02.png"></p>
+<p>为什么总是在栈顶(不是一个元素，可能多个元素，但是要从栈顶往下找)？<br><img src="/2023/09/03/compilation-principle/2023-05-07-12-36-25.png"></p>
+<p>从<strong>左向右</strong>不断读入，有句柄然后归约。因此句柄一定是在栈的上部。（我感觉是遇到谁归约谁。）</p>
+<p>不能使用移入-归约分析的文法（冲突）：  </p>
+<ol>
+<li>即使知道了所有内容和接下来k个输入符号，人们仍然无法知道是否该进行归约（还是移入）。或者不知道按照什么产生式进行归约（有多个归约可能）。（分为俩种 一种是移入-归约冲突，一种是归约-归约冲突）<br><img src="/2023/09/03/compilation-principle/2023-05-07-12-47-51.png"><br>这个问题出在 <strong>二义性</strong>  。还有一些情况，即使不是 <strong>二义性</strong> 也要有归约-归约冲突。</li>
+</ol>
+<p>如何确定句柄？<br>移入-归约分析法确定句柄的方法有俩种：  </p>
+<ol>
+<li><p>优先法。根据优先关系。算术表达式的方法。 不讲解  </p>
+</li>
+<li><p>状态法。<br>因为句柄是产生式的右部。可以把产生式右部的识别过程抽象为各个状态。可以用产生式表示句柄的不同识别状态。（通过状态，我们知道什么时候需要移入，什么时候要归约，什么时候表示句柄已经识别出来了。）（形式语言：状态就是一种情况的抽象描述，单词要一个个读入，所以我们将这个过程抽象为一个个的状态bBB，相当于我们要用DFA来辅助识别！！！）<br><img src="/2023/09/03/compilation-principle/2023-05-07-13-01-34.png"></p>
+<p>移入，等待，归约。</p>
+</li>
+</ol>
+<p>  怎么表示状态：在产生式右部加点。。</p>
+<p>  A-》ε   only one句柄<br>  A-》*<br>  什么都没有，识别一次就行了。</p>
+<p>  LR分析法。LR分析法其实就是 <strong>状态分析法</strong></p>
+<p>  L表示最左扫描，R表示的是最右推导（说白了，就是规范归约）<br>  k表示最多向前看 K 个符号。<br>  LR（0）只看栈顶符号就能决定。 </p>
+<p>  LR分析法的优点：<br>  <img src="/2023/09/03/compilation-principle/2023-05-07-13-16-57.png"><br>  最通用，无回溯，超集LL。表格驱动，自动生成。几乎所有程序设计语言。</p>
+<p>  <img src="/2023/09/03/compilation-principle/2023-05-07-13-18-23.png"><br>  栈分成俩部分了。<br>  状态栈：里面是栈<br>  符号栈：里面是符号，无论是移入的还是归约的。<br>  俩个是一一对应的。  </p>
+<p>  分析表分为action和goto</p>
+<p>  LR（0）自动机：<br>  首先确定状态，要明白状态是项的集合。<br>  LR(0)项：</p>
+<ul>
+<li>文法的 <strong>一个产生式</strong>在右部某处加上一个点<br>  A-&gt;XY.Z 说明XY已经得到了，希望看到Z</li>
+<li>A-》ε只有一个项</li>
+</ul>
+<p>  项目的意义：表示句柄分析的进程。<br>  <img src="/2023/09/03/compilation-principle/2023-05-07-13-34-12.png">  </p>
+<p>  规范LR(0)项集族：<br>  族。。。就是LR(0)自动机的所有状态。。<br>  LR（0）自动机之间的状态转换可以被用于LR(0)语法分析过程。<br>  <img src="/2023/09/03/compilation-principle/2023-05-07-13-45-30.png"></p>
+<p>  增广文法：仍然描述的是同一个语言。<br>  为什么要增广文法：<br>  S可能有多个产生式<br>  S-&gt;a.   S-&gt;b.<br>  归约到开始符号说明要分析结束了，所以我们有多种结束情况，每一种结束状态都得做判断，因此就会发现每种文法都要特定去判断有几种这样的状态。所以通用性降低了。增广文法目的是让结束状态唯一。</p>
+<p>  构造俩个子函数：<br>  一个是CLOSURE（i）：I的项集闭包，表示的是一个状态<br>  GOTO(I,X)：I的X后继。输入X后下一个项集闭包是什么。</p>
+<p>  <img src="/2023/09/03/compilation-principle/2023-05-07-13-53-05.png"><br>  项+等价项<br>  <strong>第二步的含义！！</strong><br>  α.Bβ，B肯定不可能从输入输入进来的。B肯定是归约来的。<br>  加入B-&gt;.γ表示它期望看到γ对应的终结符号。因此我们想要得到B就是得到γ句柄（个人感觉到终结符号就结束了）<br>  <img src="/2023/09/03/compilation-principle/2023-05-07-14-04-46.png"><br>  这么多LR(0)项？<br>  <strong>上节课识别id*id。要得到E就得得到E+T或者T，这样想。</strong>  </p>
+<p>  内核项：<br>  <img src="/2023/09/03/compilation-principle/2023-05-07-14-08-15.png"></p>
+<p>  goto(i,x)表示读取输入中的X或者归约到一个X之后的情况！！！对应了自动机上状态I在X上的转换！！（所以X可以是终结符号和非终结符号）</p>
+<p>  A-》. 也会用到的。相当于不动。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-14-17-10.png"><br>goto然后closure<br><strong>注意closure原理</strong>，那句话B的任意产生式B-&gt;.γ，这是原来文法的产生式。<br><img src="/2023/09/03/compilation-principle/2023-05-07-14-18-31.png"><br>每次加一个<strong>项集</strong></p>
+<p>第二循环求第一次循环产生的新状态的后继。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-14-33-42.png"><br><img src="/2023/09/03/compilation-principle/2023-05-07-14-56-16.png"><br>状态栈和符号栈同时弹。<br>最后 $和E’ 说明接受<br>第四步到第五步？？<br>发现问题？<br>这里其实是存在冲突的。移入-归约冲突。移入还是归约。第4步，移入。第8步，用的归约。<br>这里怎么解决的冲突？</p>
+<p>思考：<br>到达终止状态（只有进没有出的状态的时候）0-&gt;2-&gt;7-&gt;10 T<em>F 刻画出了T</em>F这个句柄被识别出来了。可以归约了。</p>
+<p>或者到达了有点在最后的状态，(<strong>个人感觉而且后面没了输入比如I1里面没+号了，就归约，这是我对解决冲突的看法，但是LR(0)好像办不到</strong>)就算一个句柄被识别出来了。<br><img src="/2023/09/03/compilation-principle/2023-05-07-14-38-49.png"></p>
+<p><strong>记录句柄识别过程</strong></p>
+<p>LR（0）自动机实际上是这个NFA的DFA化，这里看不到ε产生式，是被后面分析表实现了。<strong>怎么回去的？</strong><br>比如I5是归约完后到I0的。这是需要后面分析表支持的，告诉你归约后到那里！（归约后还有一步，移动一次！！！）（感觉电脑用分析表给出，人类看图就看出来了，回退多少步，就弹栈多少个）</p>
+<hr>
+<p>分析表的结构。：<br><img src="/2023/09/03/compilation-principle/2023-05-07-15-08-36.png"><br>二维表，终结符号有$没有ε</p>
+<p>goto表每一行也是状态。但是每一列不是终结符号。每一列是非终结符号。<br>goto表是goto函数决定的，当然A非终结符号是归约来的。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-15-20-09.png"><br>sj状态j<br>所有类，rj归约，j是产生式的编号（编号不考虑扩展文法加入的那一条）<br>这是LR(0)    </p>
+<p>注意出错信息只会出现在Aciton表里不会出现在goto表里。why？</p>
+<hr>
+<p>语法分析器的状态。<br><img src="/2023/09/03/compilation-principle/2023-05-07-15-28-34.png"><br>不要求掌握。</p>
+<p><strong>行为</strong><br><img src="/2023/09/03/compilation-principle/2023-05-07-15-29-06.png"><br>这里归为新格局注意一下。。。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-15-33-05.png"><br>要注意的是弹出|β|个符号。<br>弹栈是算法里实现的，跟栈没关系。  </p>
+<p>LR(0)分析法不是总是有效的。<br><img src="/2023/09/03/compilation-principle/2023-05-07-15-37-37.png"><br>既可以归约也可以移入的状态。<br>所以上面的文法：<br><img src="/2023/09/03/compilation-principle/2023-05-07-15-38-32.png"><br>分析表有冲突，说明是不确定的。所以此方法无效。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-15-39-56.png"><br>冲突不相容。<br>如果对于文法，任何I都是相容的，那么G就是LR(0)文法。</p>
+<hr>
+<p>解决冲突的方法：  </p>
+<p>SLR（1）分析表的构造算法！！<br><img src="/2023/09/03/compilation-principle/2023-05-07-15-44-34.png"><br>a不是任意的。这是和LR(0)的区别。<br>例题：<br><img src="/2023/09/03/compilation-principle/2023-05-07-15-46-42.png"><br>考虑follow集之后，就解决了冲突。 </p>
+<p>SLR的原理：可行前缀<br><img src="/2023/09/03/compilation-principle/2023-05-07-15-55-51.png"></p>
+<p>SLR(1)文法：SLR(1)分析表无冲突的CFG</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-15-57-45.png"></p>
+<p>也不是万能的：<br><img src="/2023/09/03/compilation-principle/2023-05-07-15-58-23.png"><br>FOLLOW那个仍然存在冲突。<br><img src="/2023/09/03/compilation-principle/2023-05-07-16-01-24.png"><br><img src="/2023/09/03/compilation-principle/2023-05-07-16-02-15.png"><br>每个句型（特定句型里面）语法变量后面跟着的FOLLOW集的元素是不一样的。这要考虑上下文，当然一般往后看，一般不往前看。<br>这种特定情况下一个输入的就是后继符。在SLR（1）中不考虑上下文，我们只考虑FOLLOW集。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-16-09-46.png"></p>
+<p>使用后继符的叫做LR（1）分析法。LR1不讲。<strong>每一步</strong>操作都考虑规范句型。SLR只是在归约时候考虑，不全面。</p>
+<p>只要FOLLOW集就可以归约其实不对。</p>
+<hr>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-16-12-39.png"><br>二义性文法不是LR的，也不是LL(1)</p>
+<p>二义性文法描述简单，变量少。</p>
+<p>错误模式：<br><img src="/2023/09/03/compilation-principle/2023-05-07-16-14-50.png"><br>丢弃或者弹栈。。<br>要么忽略栈要么忽略输入。</p>
+<hr>
+<p>例题：<br><img src="/2023/09/03/compilation-principle/2023-05-07-16-16-47.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-16-25-14.png"><br><img src="/2023/09/03/compilation-principle/2023-05-07-16-25-49.png"><br>I3 发现移入归约冲突。所以求FOLLOW(S)<br><img src="/2023/09/03/compilation-principle/2023-05-07-16-26-37.png"><br><img src="/2023/09/03/compilation-principle/2023-05-07-16-26-46.png"><br>左边橙色四个在LR0有SLR1不会有。</p>
+<hr>
+<p>第五章 语法制导的翻译</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-16-34-15.png"></p>
+<p>第六章中间代码的生成是给出一个适用于自底向上分析过程的语法制导翻译方案。第五章学的是一个方法理论，第六章给出的是翻译方案。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-16-41-45.png"><br>SDD:语法制导定义.</p>
+<p>语法制导的翻译：<br><img src="/2023/09/03/compilation-principle/2023-05-07-16-43-33.png"><br>翻译任务：语义分析和正确性检查</p>
+<hr>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-16-51-32.png"><br>基本思想：  </p>
+<ol>
+<li><p>将语法分析和语义处理紧密结合到一块</p>
+</li>
+<li><p>如何语法结构携带语义信息？<br>根据翻译的需要设置文法符号的属性。以描述语法结构的语义。</p>
+</li>
+<li><p>属性的计算和产生式相联系。随着语法分析进行，完成属性值计算</p>
+</li>
+</ol>
+<hr>
+<p>语法制导定义： </p>
+<p>语义分析的任务：<br>（前面讲的是翻译的任务，语义分析和翻译是不一样的。翻译是先做语义分析和正确性检查，然后做翻译的操作。语义分析只是做语义上的处理。）<br><img src="/2023/09/03/compilation-principle/2023-05-07-16-54-43.png"><br>总目标：生成<strong>等价</strong>的中间代码（或者目标代码）<br><img src="/2023/09/03/compilation-principle/2023-05-07-16-58-59.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-17-41-35.png"><br>适合归约时候完成<br><img src="/2023/09/03/compilation-principle/2023-05-07-17-42-10.png"><br>产生式右部的适当位置插入相应的语义动作，按照分析的进程，执行遇到的语义动作。适宜在推导的时候完成。</p>
+<p>依赖图不是总会生成。<br><img src="/2023/09/03/compilation-principle/2023-05-07-17-46-37.png"></p>
+<hr>
+<p>开始了，语法制导定义：<br><strong>上下文无关文法和属性&#x2F;规则的结合</strong></p>
+<ul>
+<li>属性和文法符号相关联</li>
+<li>规则和产生式相关联。</li>
+</ul>
+<p>根据需要，将文法符号和某些属性相关联。并通过语义规则来描述如何计算属性的值。</p>
+<hr>
+<p>语法制导的翻译：<br>光有属性和规则不行，在产生式体中加入语义动作，并在适当时候（语法分析）执行这些语义动作.其实主要和语法分析完全结合起来了。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-17-54-28.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-17-58-55.png"></p>
+<p>终结符号有综合属性（由词法分析获得），但是没有继承属性。。。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-18-07-12.png"></p>
+<p>翻译方案可视化：注释语法分析树。<br>包含了各个结点的各个属性的语法分析树。<br><img src="/2023/09/03/compilation-principle/2023-05-07-18-10-42.png"><br>(个人感觉就是把握住各个属性的计算顺序就可以。)</p>
+<p>S属性的SDD一定可以通过自底向上方式求值。<br><img src="/2023/09/03/compilation-principle/2023-05-07-18-12-13.png"><br>循环依赖是没有意义的</p>
+<p>不是必须掌握的</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-18-16-44.png"></p>
+<hr>
+<h2 id="6-4控制语句的翻译"><a href="#6-4控制语句的翻译" class="headerlink" title="6.4控制语句的翻译"></a>6.4控制语句的翻译</h2><p>控制结构：  </p>
+<ul>
+<li>顺序 S1;S1</li>
+<li>条件 if else</li>
+<li>循环  while</li>
+</ul>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-21-57-58.png"><br>赋值assign</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-22-04-05.png"><br>a&gt;b运行前，有可能真有可能假。所以B（a&gt;b）必须有俩个属性。true和false。<br>true和false其实里面真正要存储的内容时我们跳转到哪里。代码的编号。<br>还要code属性表示自己语义处理完的结果是啥。</p>
+<p>IF B  S1 ELSE S2<br>B 三个属性了。<br>S1除了code还要有next属性。表示S1（可以是一系列的属性）这条语句执行完毕了去哪里执行。<br>B。true B.false S。next 继承属性。</p>
+<p>然后根据语义规则给出语法制导定义。</p>
+<p>while B S1<br>B.TRUE B.FALSE B.CODE<br>分析B前，分析while后需要记录才能在执行S1后回跳到B之前。<br>有些语义处理是显示的，有些是隐式的、比如这个goto begin</p>
+<hr>
+<p>布尔表达式的翻译：<br><img src="/2023/09/03/compilation-principle/2023-05-07-22-27-01.png"><br>布尔表达式可以用于改变控制流&#x2F;计算逻辑值。<br>关系表达式不是逻辑表达式，但是结果是逻辑值。E REL E  E不是逻辑值，但E REL E最终结果是逻辑值。<br>这里要注意逻辑运算的短路现象。<br>B1和B2都要翻译，但是B1||B2若B1为真，可跳过B2，是控制流的跳转，不是翻译的跳转。</p>
+<p>这里<strong>注意</strong>：逻辑代码本身是没有中间代码的生成，是属性间的运算。而关系代码有中间代码的生成。<br><img src="/2023/09/03/compilation-principle/2023-05-07-22-34-39.png"><br>这是因为B-&gt;E REL E是逻辑结果也表示一种程序控制流的改变，但是这里不像逻辑表达式有B，所以它为了表示控制流改变，需要生成两条中间代码。一条表示真一条表示假。</p>
+<p>例子：<br><img src="/2023/09/03/compilation-principle/2023-05-07-22-41-58.png"><br>x&lt;100 是关系运算，所以会生成中间代码。刚分析时候L2是不知道的。 &amp;&amp;优先级比||高。<br><img src="/2023/09/03/compilation-principle/2023-05-07-22-46-54.png"></p>
+<p>在分析&amp;&amp;时候  确定了L3中的L4,（个人感觉，这里L3中的L1应该没法确定，应该是等于归约的B的false。  然后L4里面的俩个都无法确定，他们分别和归约后B的truefalse对应）<br>然后变成：<br><img src="/2023/09/03/compilation-principle/2023-05-07-22-51-16.png"></p>
+<p>然后在这里归约时候才能确定第二行的goto L3 （但是后面的B的true和false最终由变成了归约后的B的true和false了，目前还是没法得出值，只是知道相等。）</p>
+<p>然后就归约成了<br>if（B） x&#x3D;0；<br>在x&#x3D;0；之前，这些括号里面的都读完了后才能确定<br>第一行goto L2  也就是确定了最外层B的true<br>然后x&#x3D;0分析完后才知道最外层的B 的false 才能那俩个goto L1填上去。  </p>
+<p>不用回填就是先全部翻译，再从下往上找。</p>
+<hr>
+<p>语法制导定义：</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-07-23-07-59.png"><br>newlabel临时变量<br>B1处理结果，label（B1.false），就是那个B2前面，然后B2处理结果。合起来是B的中间代码结果</p>
+<p>这里要生成中间代码（受控的副作用。）：<br><img src="/2023/09/03/compilation-principle/2023-05-07-23-12-49.png"></p>
+<p>例子：<br><img src="/2023/09/03/compilation-principle/2023-05-07-23-23-04.png">  </p>
+<p>控制流到达什么位置的问题。。。<br><img src="/2023/09/03/compilation-principle/2023-05-07-23-26-03.png"><br>简单办法：先全部生成出来，知道了所有代码序列。再从后往前找，把目标标号作为语句的继承属性next来传递，这个方法需要第二趟的处理。  </p>
+<p>一遍处理完：回填，提高效率。一边翻译的时候，一边将跳转位置确定下来。</p>
+<p>基本思想：<br>借助另外的数据结构（可以是链表，跳转方向一致的是同一个链表）<br><img src="/2023/09/03/compilation-principle/2023-05-07-23-30-08.png"><br>比如说a&gt;b||d 分析完后起码能确定一部分内容，起码知道d的起始编号，就能回填部分。</p>
+<p>truelist:它成功准备跳转，但是不知道跳哪里去。我认为里面包含的都是一层层上来的。就是说<strong>和它成功准备跳转地方一样的那些中间代码编号都在truelist当中</strong>。（跳转方向没确定，但是跳转方向一致的）<br>综合属性是因为后面都是采用自底向上的。</p>
+<p>三个受控的副作用（不会改变程序本身的语义，是在程序处理过程当中进行额外的处理，比如这里是对truelist和falselist进行处理）：<br>makelist（i）：i是当前要保存的中间代码的编号。创建一个节点，加一个元素到truelist，falselist。<br>merge（p1，p2），p1，p2指向的链表合并起来。<br>backpatch（p，i）p是要回填操作的链表的头指针，用i回填。i是跳转目标的中间代码编号。<br><img src="/2023/09/03/compilation-principle/2023-05-08-12-21-21.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-12-26-15.png"><br>这里语法制导翻译方案和前面的SDD非常一致。B的truelist，falselist和B1,B2区别。</p>
+<p><strong>注意这些都是句柄识别出来后执行的</strong>除了M语句。其实B1,B2里面truelist和falselist里面的信息都是被记录下来了，不能丢失。因为此时B.truelist和falselist在分析完这里是没法确定的。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-12-44-47.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-12-48-41.png"></p>
+<p>除了逻辑表达式以外，还有关系运算。<br><img src="/2023/09/03/compilation-principle/2023-05-08-12-53-48.png"><br>把生成的中间代码（跳转位置不定）编号放入B.truelist和B.falselist</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-13-14-02.png"><br>一个中间代码</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-13-24-15.png"><br><img src="/2023/09/03/compilation-principle/2023-05-08-14-19-27.png"></p>
+<p>上面的例子是<strong>基于回填的布尔表达式的语法制导翻译方案</strong>。这里不是完整的，因为a 和b没有进行类型检查，类型匹配。<br><img src="/2023/09/03/compilation-principle/2023-05-08-14-24-24.png"><br>接下来看控制流语句的翻译。<br><img src="/2023/09/03/compilation-principle/2023-05-08-14-24-43.png"><br>先看初步的语法制导定义<br><img src="/2023/09/03/compilation-principle/2023-05-08-14-25-26.png"></p>
+<p><strong>重点</strong>：<br><img src="/2023/09/03/compilation-principle/2023-05-08-14-34-03.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-14-35-37.png"><br>code就是生成中间代码的结果。 </p>
+<p>while x&gt;y 或者x&#x3D;y 执行完毕会回跳到while（a&lt;b)  这就是while的特性，其实是把if else当一个整体。整体结束了这俩种情况，结束了就回跳。</p>
+<p>倒数几行的GOTO L3 一个道理，但是是内层while  所以后面赋值语句都加了中间代码goto。</p>
+<p>这里goto L3后面没有goto，因为这是被优化的结果。<br><img src="/2023/09/03/compilation-principle/2023-05-08-14-52-27.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-14-54-35.png"><br>if (B) M S1 因为用的后缀翻译方案，所以M需要保存一下，便于等下回填B中的TRUELIST</p>
+<p>nextlist 下一条要执行的中间代码是什么？<br>makelist里面的nextinstr指的自己生成的中间代码的编号<br>这里我感觉可以理解为。S1执行完肯定是要跳的。但是跳到哪里？不是句子内的部分，是S.next是<strong>句子外的部分</strong>,因此需要后面进行回填用makelist.</p>
+<p>自底向上的翻译:<br><img src="/2023/09/03/compilation-principle/2023-05-08-15-10-06.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-15-14-15.png"><br>俩个merge操作。N有个无条件的跳转指令，但是不知道跳到哪里所以增加了nextlist属性，来存储这个无条件跳转要被回填，但是确定不了。</p>
+<p>？？？ S1 N？<br>个人感觉S1 nextlist里面要回填，是因为这是自底向上的，里面的底层元素信息可能需要回填。但是N要回填，这是真有一个中间代码在这里，到这里的时候真的要用那个goto跳转。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-08-15-24-21.png"><br>这里和if else就有点像了。<br>为了能够循环执行，所以是有生成一个中间跳转代码的，在最后（在if else 当中是中间一个N生成了一个goto 中间代码）</p>
+<p>有无嵌套过程的数据访问。</p>
+<hr>
+<p>C语言</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-14-44-16.png"><br>最上层  —  离他最近的<br>访问链生成一个链，栈顶开始嵌套深度逐一递减。<br>q通过访问链就可以找到s的数据区，从而用s里面的数据。（根据偏移量去找数据。）<br>p访问q和s里面的数据</p>
+<p>访问链是访问数据的第一个方法。。。</p>
+<p>显示表，又称为display表，是为了解决显示表的问题。</p>
+<p>display表的维护<br>在调用p时，在p的活动记录中保留d[np]的值，并将d[NP]设置为当前活动记录。<br>从p返回时候，恢复d[np]的值。<br>（d【i】深度为i最高的活动记录）<br>从1开始，不是0开始。</p>
+<p>刚开始display表里面都是空的。所以S保存d【1】里面的内容时null。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-15-12-03.png"><br>所以q【1，9】里面保存d【2】的内容也是null。  d【2】里面存放的是Q【1，9】的活动记录（数据区）的首地址</p>
+<hr>
+<p>语义分析第二讲。<br>语法分析树。可以看到语义信息。不代表语义规则是怎么运算。这是语法制导翻译方案的。</p>
+<p>语法制导翻译方案必须要满足某些技术，方案。<br>语法分析树那个图都是综合属性，所以能用自底向上的SDD。但是前面表达式文法存在直接左递归，无法自顶向下。但是消除左递归后，无法直接用val进行处理。<br><img src="/2023/09/03/compilation-principle/2023-05-10-17-11-52.png"><br>乘法左侧数，因为F是已经推导了。因此左侧操作数只能来源于父节点。相当于一定要有一个继承属性。<br><img src="/2023/09/03/compilation-principle/2023-05-10-17-17-41.png"></p>
+<p>不同语法制导定义适用于不同的语法分析技术，不同语法分析技术里面要的属性不一样。（语法分析技术的改变引起的语法制导定义的改变。）</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-17-33-23.png">  </p>
+<p>SDD 的求值顺序：<br>原理 ：  这些值的计算顺序应该形成一个偏序关系。<br><img src="/2023/09/03/compilation-principle/2023-05-10-17-35-01.png"><br><img src="/2023/09/03/compilation-principle/2023-05-10-17-35-23.png"></p>
+<p>有向图里面的排序：<br>拓扑排序。<br>找谁在前谁在后的顺序。<br>如果依赖图上没有环的存在，那么在有向图上可以找到一个顺序就是语义值的运算顺序。<br>有意思：按顺序遍历点就可以得到语义结果。</p>
+<p>但是不是所有拓扑排序都是可以的。</p>
+<p>给定一个SDD，很难判定是否存在一个分析树，对应依赖图包含怀。<br>但是S属性SDD 和L属性的SDD  一定不包含环。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-17-44-21.png"></p>
+<p>自底向上：<br>在构造分析树的子节点的同时计算相关属性。<br><img src="/2023/09/03/compilation-principle/2023-05-10-17-48-10.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-17-50-24.png"></p>
+<p>依赖图的边总是从左到右，从上到下。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-18-41-48.png"></p>
+<p>addtype（）<br>id的类型信息，标注为L1的类型。<br>id的这个类型信息是放在符号表里面的。</p>
+<hr>
+<p>17  </p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-18-00-30.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-18-01-33.png"><br>6，,5 从右往左</p>
+<p>堆式的存储分配：<br><img src="/2023/09/03/compilation-principle/2023-05-10-18-49-47.png"><br>随时申请，随时释放。<br>分配回收。。<br>分配：固定长分块法。  可变长分块法。所以这里是对符号表的操作，不是语义的操作。在编译里我们叫做受控的副作用。<br><strong>语义处理操作的不是语法制导定义里面的属性，而是操作符号表里面的东西。这是由于编译程序的需要而定义的受控副作用，而定义的语义处理。</strong></p>
+<p><strong>如果没有受控的副作用。符号表在哪？<br>符号表当做一个属性放在语法变量里面。   通过受控副作用，符号表是一个全局变量。我们通过自定义函数直接去访问它，就不需要把符号表当属性传递</strong>。<br>当全局变量，不是严格的语法制导定义，因为不是属性传递。但是可以降低复杂度。限制：</p>
+<ul>
+<li>不改变属性</li>
+<li>不改变运算关系</li>
+</ul>
+<p>总而言之，不能影响数据处理结果，只能进行帮助。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-19-55-19.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-09-42.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-09-00.png"><br>这是一般的方法<br>新的文法。<br>但一般不用这样的。下面给出特殊：  </p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-13-02.png"><br>语义栈。和  状态栈属性栈对应起来就好。<br><img src="/2023/09/03/compilation-principle/2023-05-10-20-15-01.png"></p>
+<p>这是用程序可以实现的。<br><img src="/2023/09/03/compilation-principle/2023-05-10-20-18-28.png"></p>
+<p>理论变成实践。<br><img src="/2023/09/03/compilation-principle/2023-05-10-20-21-30.png"></p>
+<p>两类sdd<br>LR  S属性<br>LL L属性<br>这俩类可以结合。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-26-15.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-28-44.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-37-42.png"><br>C的true，false和s1.NEXT都是来自前面的或者父节点的是继承属性。</p>
+<p>L属性的SDT改写成适合自底向上的过程的语法制导翻译方案。<br><img src="/2023/09/03/compilation-principle/2023-05-10-20-40-24.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-43-58.png"><br>M对应的语义栈<br><img src="/2023/09/03/compilation-principle/2023-05-10-20-45-13.png"></p>
+<hr>
+<p>中间代码：<br>主要是可移植性和优化的问题。可以实现跨平台的问题。<br><img src="/2023/09/03/compilation-principle/2023-05-10-20-47-21.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-46-18.png"></p>
+<p>xyz</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-20-51-15.png"><br>x&#x3D;y  复制指令，地址。</p>
+<hr>
+<p>类型与声明<br>类型检查。</p>
+<p>说明语句：进行类型定义。<br>为什么要有类型定义：定义类型就是这个对象占多大的空间。分配几个字节。<br><img src="/2023/09/03/compilation-principle/2023-05-10-20-59-14.png"><br>还有计算数据元素地址，类型转换，选择正确的运算符。</p>
+<p>类型表达式是表示类型的结构。<br>基本类型：int float<br>复杂类型：struct，union，可以用类型表达式。<strong>类型构造算</strong>子作用于类型。</p>
+<p>声明语句要处理啥？<br>分配内存。<br><img src="/2023/09/03/compilation-principle/2023-05-10-21-03-07.png"><br>运行前，每个函数相对地址。</p>
+<p>声明语句，语法制导翻译方案。<br><img src="/2023/09/03/compilation-principle/2023-05-10-21-06-07.png"><br>这里t，w避免了继承属性。更加简单了。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-21-08-48.png"><br>一个区域一个符号表。区域有嵌套关系，符号表之间也就设置这种嵌套关系。</p>
+<p>或者一张表，但是表里记录作用域信息</p>
+<p>声明语句SDT<br><img src="/2023/09/03/compilation-principle/2023-05-10-21-12-01.png"><br>top.put 也是受控的副作用。<br><img src="/2023/09/03/compilation-principle/2023-05-10-21-14-30.png"><br>P-&gt;D目的是一个offset的初始化。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-21-16-28.png"><br>这是完整的方案。</p>
+<hr>
+<p>第八章<br>目标代码。</p>
+<p>根据中间代码，生成目标代码。</p>
+<p>三个任务</p>
+<ul>
+<li>指令的选择：选择适当的指令实现IR语句</li>
+<li>寄存器分配和指派： （一般生成汇编代码，直接生成机器不现实）  分配和指派是俩个不同的概念。</li>
+<li>指令排序： 按照什么顺序安排指令执行。<br><img src="/2023/09/03/compilation-principle/2023-05-10-19-03-17.png"></li>
+</ul>
+<p>主要问题：</p>
+<ul>
+<li>正确性（等价）</li>
+<li>易于实现，测试，维护</li>
+<li>输入IR的选择，（我们用三地址）</li>
+<li>输出，大多可重定向的汇编问题</li>
+</ul>
+<p>目标机模型：<br>三地址机器模型。<br>指令：</p>
+<ul>
+<li>LD dst，addr； 把</li>
+<li>ST 寄存器保存到内存中去</li>
+</ul>
+<hr>
+<p>翻译成目标代码要考虑数据和控制流<br>翻译比较复杂。怎么快速找到控制流和数据流？<br>控制流—基本块和流图。<br>从控制流角度把中间代码划分为基本块（内部顺序，不跳走。）。<br>知道控制流后，寄存器的分配和指派会更有效率。</p>
+<hr>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-19-09-16.png"></p>
+<p>寻址模式：<br>变量x：指向分配x的内存位置。<br><img src="/2023/09/03/compilation-principle/2023-05-10-19-12-23.png"><br>常量constant<br><img src="/2023/09/03/compilation-principle/2023-05-10-19-14-42.png"><br>这样一个三地址代码会生成4条目标代码。<br><img src="/2023/09/03/compilation-principle/2023-05-10-19-19-32.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-10-19-24-40.png"></p>
+<p>状态栈符号栈。<br><img src="/2023/09/03/compilation-principle/2023-05-11-14-47-52.png"><br>为什么可以用状态法<br><img src="/2023/09/03/compilation-principle/2023-05-11-14-48-00.png"><br>为什么可以用栈管理：<br><img src="/2023/09/03/compilation-principle/2023-05-11-16-31-05.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-16-32-59.png"><br><img src="/2023/09/03/compilation-principle/2023-05-11-16-33-39.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-16-40-02.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-17-57-30.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-18-02-47.png"><br>链路<br><img src="/2023/09/03/compilation-principle/2023-05-11-18-03-30.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-18-40-16.png"><br><img src="/2023/09/03/compilation-principle/2023-05-11-18-42-18.png"></p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-18-51-10.png"></p>
+<p>代码生成器主要目标：尽量减少加载和保存指令，最大程度利用寄存器。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-19-07-23.png"></p>
+<p>寄存器描述符：跟踪哪些变量当前值放在寄存器里。</p>
+<p>地址描述符：在哪个位置上，或哪些位置上可以找到该变量的当前值。寄存器里没有要根据地址描述符去内存里读进来。</p>
+<p>机器指令的质量取决于getReg函数选取寄存器的算法。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-19-22-44.png"><br><strong>修改了R，所以有第三条规则</strong>。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-19-23-19.png"><br>只需要修改地址描述符。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-19-25-14.png"><br>x的地址描述符只包含RX是因为x是新生成的。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-19-28-14.png"><br>因为Ry是俩个，x，y所以x加入Ry<br><strong>同时又由于对x来说这个值是新的，所以地址描述符只包含Ry</strong></p>
+<p>getreg没空闲的就要把其中一个寄存器里面的值送走。</p>
+<p><img src="/2023/09/03/compilation-principle/2023-05-11-20-47-48.png"><br>gen也是受控的副作用、<br>E.addr  表示运算对象的地址，从而找到值</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://123.249.26.15">jinzhao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://123.249.26.15/2023/09/03/compilation-principle/">http://123.249.26.15/2023/09/03/compilation-principle/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://123.249.26.15" target="_blank">锦钊的博客</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2023/09/03/hello-world/" title="Hello World"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Hello World</div></div></a></div><div class="next-post pull-right"><a href="/2023/05/10/principle/" title="principle"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">principle</div></div></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">jinzhao</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">6</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">0</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#6-4%E6%8E%A7%E5%88%B6%E8%AF%AD%E5%8F%A5%E7%9A%84%E7%BF%BB%E8%AF%91"><span class="toc-number">1.</span> <span class="toc-text">6.4控制语句的翻译</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/09/03/Path-planning-based-on-drawing-Qt/" title="Path planning based on drawing (Qt)">Path planning based on drawing (Qt)</a><time datetime="2023-09-02T17:40:05.000Z" title="发表于 2023-09-03 01:40:05">2023-09-03</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/09/03/hello-world/" title="Hello World">Hello World</a><time datetime="2023-09-02T17:31:30.858Z" title="发表于 2023-09-03 01:31:30">2023-09-03</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/09/03/compilation-principle/" title="compilation-principle">compilation-principle</a><time datetime="2023-09-02T17:31:30.856Z" title="发表于 2023-09-03 01:31:30">2023-09-03</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/05/10/principle/" title="principle">principle</a><time datetime="2023-05-10T13:20:48.000Z" title="发表于 2023-05-10 21:20:48">2023-05-10</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/05/02/software-project/" title="software project">software project</a><time datetime="2023-05-02T11:05:39.000Z" title="发表于 2023-05-02 19:05:39">2023-05-02</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2023 By jinzhao</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.min.js"></script><div class="js-pjax"></div><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
